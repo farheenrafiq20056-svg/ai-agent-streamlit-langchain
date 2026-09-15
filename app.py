@@ -2,8 +2,7 @@ import streamlit as st
 from datetime import datetime
 
 from langchain_groq import ChatGroq
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import create_agent
 from langchain_core.tools import tool
 from langchain_community.tools import DuckDuckGoSearchRun
 
@@ -93,7 +92,7 @@ if user_input:
         with st.chat_message("user"):
             st.write(user_input)
 
-        # Build the agent
+        # Build and run the agent
         with st.chat_message("assistant"):
             with st.spinner("Thinking and using tools if needed..."):
                 try:
@@ -103,18 +102,19 @@ if user_input:
                         temperature=0.3,
                     )
 
-                    prompt = ChatPromptTemplate.from_messages([
-                        ("system", "You are a helpful AI agent. Use tools when they "
-                                   "help you give a more accurate or up-to-date answer."),
-                        ("human", "{input}"),
-                        MessagesPlaceholder("agent_scratchpad"),
-                    ])
+                    agent = create_agent(
+                        model=llm,
+                        tools=tools,
+                        system_prompt=(
+                            "You are a helpful AI agent. Use tools when they "
+                            "help you give a more accurate or up-to-date answer."
+                        ),
+                    )
 
-                    agent = create_tool_calling_agent(llm, tools, prompt)
-                    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
-
-                    result = agent_executor.invoke({"input": user_input})
-                    bot_reply = result["output"]
+                    result = agent.invoke(
+                        {"messages": [{"role": "user", "content": user_input}]}
+                    )
+                    bot_reply = result["messages"][-1].content
 
                     st.write(bot_reply)
 
