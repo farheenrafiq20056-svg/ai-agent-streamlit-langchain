@@ -1,5 +1,0 @@
-streamlit
-langchain
-langchain-groq
-langchain-community
-duckduckgo-search
